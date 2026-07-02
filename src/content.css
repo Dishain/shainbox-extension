@@ -1,23 +1,122 @@
-.shainbox-clip-btn {
+/* ShainBox Clipper overlay — Tran Mau Tri Tam idiom: white surface, hairline,
+   soft shadow, one blue accent, generous radius. Scoped by .shainbox-clip. */
+
+.shainbox-clip {
   position: absolute;
   z-index: 2147483647;
   display: none;
+  align-items: center;
+  height: 32px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid rgba(28, 28, 30, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(28, 28, 40, 0.18), 0 1px 3px rgba(28, 28, 40, 0.12);
+  font: 500 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  color: #1c1c1e;
+  user-select: none;
+}
+
+.shainbox-clip__save,
+.shainbox-clip__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
   margin: 0;
-  padding: 6px 12px;
+  padding: 0;
   border: 0;
-  border-radius: 8px;
-  background: #2a85ff;
-  color: #fff;
-  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  letter-spacing: -0.01em;
+  background: transparent;
+  color: #6b6b70;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.shainbox-clip-btn:hover {
-  background: #1e6fe0;
-  transform: translateY(-1px);
+.shainbox-clip__save {
+  width: 34px;
+  border-radius: 12px 0 0 12px;
 }
-.shainbox-clip-btn:active {
-  transform: translateY(0) scale(0.97);
+.shainbox-clip__more {
+  width: 26px;
+  border-radius: 0 12px 12px 0;
+}
+.shainbox-clip__save:hover,
+.shainbox-clip__more:hover {
+  background: rgba(42, 133, 255, 0.1);
+  color: #2a85ff;
+}
+.shainbox-clip__save.is-busy {
+  opacity: 0.5;
+}
+.shainbox-clip__save.is-error {
+  background: rgba(255, 90, 90, 0.12);
+}
+.shainbox-clip__div {
+  width: 1px;
+  height: 18px;
+  background: rgba(28, 28, 30, 0.1);
+}
+
+/* Board picker dropdown */
+.shainbox-clip__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 190px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(28, 28, 30, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(28, 28, 40, 0.2), 0 2px 6px rgba(28, 28, 40, 0.1);
+}
+.shainbox-clip__label {
+  padding: 6px 10px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9a9a9e;
+}
+.shainbox-clip__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  color: #1c1c1e;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.shainbox-clip__row:hover {
+  background: rgba(42, 133, 255, 0.1);
+}
+.shainbox-clip__row.is-active {
+  color: #1e6fe0;
+}
+.shainbox-clip__ico {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.shainbox-clip__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shainbox-clip__tick {
+  color: #2a85ff;
+  font-size: 12px;
+}
+.shainbox-clip__empty {
+  padding: 8px 10px 10px;
+  font-size: 12px;
+  color: #9a9a9e;
 }

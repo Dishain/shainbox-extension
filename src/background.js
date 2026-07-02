@@ -104,7 +104,7 @@ async function flash(color, text) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === 'save') {
     ;(async () => {
-      const payload = { imageUrl: msg.imageUrl, pageUrl: msg.pageUrl }
+      const payload = { imageUrl: msg.imageUrl, pageUrl: msg.pageUrl, board: msg.board }
       const r = await trySave(payload)
       if (r.ok) {
         await flash('#1fb36b', '✓')
@@ -121,6 +121,26 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       }
     })()
     return true // async response
+  }
+  if (msg && msg.type === 'boards') {
+    ;(async () => {
+      const token = await getToken()
+      const port = await findApp()
+      if (!token || !port) {
+        sendResponse({ ok: false, boards: [] })
+        return
+      }
+      try {
+        const res = await fetch(`http://127.0.0.1:${port}/boards`, {
+          headers: { 'x-shainbox-token': token },
+        })
+        const j = await res.json().catch(() => ({}))
+        sendResponse({ ok: !!j.ok, boards: Array.isArray(j.boards) ? j.boards : [] })
+      } catch {
+        sendResponse({ ok: false, boards: [] })
+      }
+    })()
+    return true
   }
   if (msg && msg.type === 'status') {
     ;(async () => {
