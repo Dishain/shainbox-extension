@@ -11,9 +11,11 @@
 
 const MIN_SIZE = 100
 const APP_MARK =
-  '<svg viewBox="0 0 32 32" width="16" height="16" aria-hidden="true">' +
-  '<rect width="32" height="32" rx="7" fill="#0A0A0A"/>' +
-  '<circle cx="16" cy="16" r="5" fill="#2A85FF"/></svg>'
+  // Simplified brand mark (blue cube on black) — dashed wireframe from the
+  // full logo is dropped: it turns to noise at 16px.
+  '<svg viewBox="0 0 1024 1024" width="16" height="16" aria-hidden="true">' +
+  '<rect width="1024" height="1024" rx="205" fill="#0A0A0A"/>' +
+  '<path d="M512 232L756 372V652L512 792L268 652V372Z" fill="#2A85FF"/></svg>'
 const CHECK =
   '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">' +
   '<path d="M3.5 8.5l3 3 6-7" fill="none" stroke="#1fb36b" stroke-width="2" ' +
