@@ -24,10 +24,11 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        margin: 10px 0 14px;
+        margin-top: 10px;
         font-size: 12px;
       }
       .dot {
+        flex: none;
         width: 8px;
         height: 8px;
         border-radius: 50%;
@@ -35,6 +36,8 @@
       }
       .dot.on { background: #1fb36b; }
       .dot.off { background: #ff5a5a; }
+      .section { margin-top: 14px; }
+      .hidden { display: none; }
       label {
         display: block;
         font-size: 11px;
@@ -51,7 +54,7 @@
         border-radius: 8px;
         font: inherit;
       }
-      button {
+      .primary {
         margin-top: 10px;
         width: 100%;
         padding: 9px;
@@ -62,12 +65,73 @@
         font-weight: 600;
         cursor: pointer;
       }
-      button:hover { background: #1e6fe0; }
+      .primary:hover { background: #1e6fe0; }
+      .site {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 10px;
+        border: 1px solid #e3e3e7;
+        border-radius: 10px;
+      }
+      .site-info { min-width: 0; }
+      .site-host {
+        font-size: 12px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .site-state { font-size: 11px; color: #8a8a8e; }
+      .beta {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 1px 5px;
+        border-radius: 99px;
+        background: rgba(42, 133, 255, 0.12);
+        color: #1e6fe0;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        vertical-align: 1px;
+      }
+      .ghost {
+        flex: none;
+        padding: 6px 10px;
+        border: 1px solid #d8d8dc;
+        border-radius: 8px;
+        background: transparent;
+        color: #1c1c1e;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .ghost:hover { border-color: #b9b9c0; }
+      .linkbtn {
+        margin-top: 12px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #6b6b70;
+        font: inherit;
+        font-size: 11.5px;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .linkbtn:hover { color: #1c1c1e; }
       .hint { margin-top: 10px; color: #8a8a8e; font-size: 11px; }
       @media (prefers-color-scheme: dark) {
         body { background: #141619; color: #f3f4f6; }
-        input { background: #1c1f24; border-color: #2a2f3a; color: #f3f4f6; }
         h1 { color: #f3f4f6; }
+        input { background: #1c1f24; border-color: #2a2f3a; color: #f3f4f6; }
+        .site { border-color: #2a2f3a; }
+        .ghost { border-color: #2a2f3a; color: #f3f4f6; }
+        .ghost:hover { border-color: #4a4f5a; }
+        .linkbtn:hover { color: #f3f4f6; }
       }
     </style>
   </head>
@@ -77,12 +141,38 @@
       <span id="appDot" class="dot"></span>
       <span id="appText">Checking…</span>
     </div>
-    <label for="token">Pairing token</label>
-    <input id="token" type="text" placeholder="Paste token from ShainBox → Settings" />
-    <button id="save">Pair</button>
-    <div class="hint" id="hint">
-      In the app: Settings → Browser clipper → turn it on → copy the token here.
+
+    <div id="siteSection" class="section hidden">
+      <div class="site">
+        <div class="site-info">
+          <div class="site-host" id="siteHost"></div>
+          <div class="site-state" id="siteState"></div>
+        </div>
+        <button class="ghost" id="siteToggle" type="button">Disable</button>
+      </div>
     </div>
+
+    <div id="videoSection" class="section hidden">
+      <div class="site">
+        <div class="site-info">
+          <div class="site-host">Videos &amp; GIFs <span class="beta">Beta</span></div>
+          <div class="site-state" id="videoState"></div>
+        </div>
+        <button class="ghost" id="videoToggle" type="button">Turn off</button>
+      </div>
+    </div>
+
+    <div id="pairSection" class="section">
+      <label for="token">Pairing token</label>
+      <input id="token" type="text" placeholder="Paste token from ShainBox → Settings" />
+      <button class="primary" id="save" type="button">Pair</button>
+      <div class="hint" id="hint">
+        In the app: Settings → Browser clipper → turn it on → copy the token here.
+      </div>
+    </div>
+
+    <button class="linkbtn hidden" id="changeToken" type="button">Change pairing token…</button>
+
     <script src="popup.js"></script>
   </body>
 </html>

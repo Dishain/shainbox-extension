@@ -42,7 +42,7 @@ function boardColor(name) {
 let control = null
 let saveBtn = null
 let menu = null
-let currentImg = null
+let currentMedia = null
 let hideTimer = null
 let menuOpen = false
 let boardsLoaded = false
@@ -51,6 +51,34 @@ let lastBoard = 'Inbox'
 chrome.storage.local.get('lastBoard').then(({ lastBoard: lb }) => {
   if (lb) lastBoard = lb
 })
+
+// Per-site kill switch + video/GIF beta toggle (managed from the popup).
+// Both react live via storage.onChanged — no page reload needed.
+let siteDisabled = false
+let videoSaves = true
+chrome.storage.local.get(['disabledSites', 'videoSaves']).then(({ disabledSites, videoSaves: vs }) => {
+  siteDisabled = Array.isArray(disabledSites) && disabledSites.includes(location.hostname)
+  videoSaves = vs !== false
+  if (siteDisabled) hideControl()
+})
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return
+  if (changes.disabledSites) {
+    const list = changes.disabledSites.newValue
+    siteDisabled = Array.isArray(list) && list.includes(location.hostname)
+    if (siteDisabled) hideControl()
+  }
+  if (changes.videoSaves) {
+    videoSaves = changes.videoSaves.newValue !== false
+    if (!videoSaves && currentMedia && isVideoLike(currentMedia)) hideControl()
+  }
+})
+
+function hideControl() {
+  closeMenu()
+  if (control) control.style.display = 'none'
+  currentMedia = null
+}
 
 function build() {
   if (control) return
@@ -89,7 +117,7 @@ function position(img) {
 
 function showFor(img) {
   build()
-  currentImg = img
+  currentMedia = img
   resetSaveIcon()
   control.style.display = 'inline-flex'
   requestAnimationFrame(() => position(img))
@@ -100,7 +128,7 @@ function scheduleHide() {
   hideTimer = setTimeout(() => {
     if (menuOpen) return
     if (control) control.style.display = 'none'
-    currentImg = null
+    currentMedia = null
   }, 160)
 }
 
@@ -124,8 +152,8 @@ function flashSave(kind, label) {
 }
 
 function save(board) {
-  if (!currentImg) return
-  const imageUrl = currentImg.currentSrc || currentImg.src
+  if (!currentMedia) return
+  const imageUrl = mediaUrl(currentMedia)
   if (!imageUrl) return
   saveBtn.classList.add('is-busy')
   chrome.runtime.sendMessage(
@@ -195,17 +223,56 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 }
 
+/** http(s) URL of the media, or null (blob:/data: sources can't be fetched by the app). */
+function mediaUrl(el) {
+  const u = el.currentSrc || el.src || ''
+  if (/^https?:/i.test(u)) return u
+  if (el instanceof HTMLVideoElement) {
+    const s = el.querySelector('source[src]')
+    if (s && /^https?:/i.test(s.src)) return s.src
+  }
+  return null
+}
+
+/** Part of the beta video feature: <video> elements and animated .gif images. */
+function isVideoLike(el) {
+  if (el instanceof HTMLVideoElement) return true
+  const u = el.currentSrc || el.src || ''
+  return /\.gif([?#]|$)/i.test(u)
+}
+
 function eligible(el) {
-  return el instanceof HTMLImageElement && el.clientWidth >= MIN_SIZE && el.clientHeight >= MIN_SIZE
+  return (
+    (el instanceof HTMLImageElement || el instanceof HTMLVideoElement) &&
+    el.clientWidth >= MIN_SIZE &&
+    el.clientHeight >= MIN_SIZE &&
+    (videoSaves || !isVideoLike(el)) &&
+    !!mediaUrl(el)
+  )
+}
+
+/** Videos often hide under overlay divs — probe the element stack at the cursor. */
+function findMediaAt(e) {
+  if (e.target instanceof Element && eligible(e.target)) return e.target
+  if (typeof e.clientX !== 'number') return null
+  for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
+    if (el instanceof HTMLVideoElement && eligible(el)) return el
+  }
+  return null
 }
 
 document.addEventListener(
   'mouseover',
   (e) => {
+    if (siteDisabled) return
     if (control && control.contains(e.target)) return
-    if (eligible(e.target)) {
-      clearTimeout(hideTimer)
-      showFor(e.target)
+    const media = findMediaAt(e)
+    if (!media) return
+    clearTimeout(hideTimer)
+    // Re-hovering the same media (e.g. crossing a video's overlay children)
+    // shouldn't reset the save-button state mid-flash.
+    if (media !== currentMedia || !control || control.style.display === 'none') {
+      showFor(media)
     }
   },
   true,
@@ -213,7 +280,9 @@ document.addEventListener(
 document.addEventListener(
   'mouseout',
   (e) => {
-    if (e.target instanceof HTMLImageElement) scheduleHide()
+    if (!currentMedia || !control || control.style.display === 'none') return
+    if (e.relatedTarget instanceof Node && control.contains(e.relatedTarget)) return
+    scheduleHide()
   },
   true,
 )
@@ -227,7 +296,7 @@ document.addEventListener(
 window.addEventListener(
   'scroll',
   () => {
-    if (currentImg && control && control.style.display !== 'none') position(currentImg)
+    if (currentMedia && control && control.style.display !== 'none') position(currentMedia)
   },
   true,
 )

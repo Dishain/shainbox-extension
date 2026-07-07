@@ -147,7 +147,20 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       const token = await getToken()
       const port = await findApp()
       const queued = (await getQueue()).length
-      sendResponse({ paired: !!token, appOnline: !!port, port, queued })
+      // A stored token isn't a working token — ask the app. Only an explicit
+      // 401 marks it invalid; a network hiccup shouldn't scare the user.
+      let tokenValid = !!token
+      if (token && port) {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/boards`, {
+            headers: { 'x-shainbox-token': token },
+          })
+          tokenValid = res.status !== 401
+        } catch {
+          tokenValid = true
+        }
+      }
+      sendResponse({ paired: !!token, appOnline: !!port, port, queued, tokenValid })
     })()
     return true
   }

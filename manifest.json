@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ShainBox Clipper",
-  "version": "0.1.0",
-  "description": "Save images from any site straight into the ShainBox desktop app.",
+  "version": "0.2.0",
+  "description": "Save images, GIFs and videos from any site straight into the ShainBox desktop app.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
