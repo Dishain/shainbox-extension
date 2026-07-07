@@ -86,24 +86,36 @@ Questions or ideas? → https://shain.one/shainbox
 
 ---
 
-## Вкладка Privacy (ответы для ревью)
+## Вкладка Privacy — ПО ПОЛЯМ ФОРМЫ (как в дашборде)
 
-- **Single purpose**: Save images and videos from web pages into the user's
-  local ShainBox desktop application.
-- **Permission justifications**:
-  - `host_permissions <all_urls>` + content script: the save button must appear
-    on images on any website the user browses; the extension cannot know in
-    advance which sites the user collects references from.
-  - `storage`: stores the local pairing token, last-used board and per-site
-    on/off preferences.
-  - `alarms`: periodically retries delivering queued clips when the desktop
-    app was offline.
-  - `http://127.0.0.1/*`, `http://localhost/*`: the extension sends saved files
-    ONLY to the ShainBox desktop app listening on the user's own machine.
-- **Data usage**: не собирает ничего. Отметить «Does not collect user data»
-  во всех пунктах — расширение не имеет аналитики и не шлёт данные никуда,
-  кроме localhost.
-- **Privacy policy URL**: https://shain.one/shainbox/privacy.html
+**Single purpose description:**
+```
+Save images and videos from web pages into the user's local ShainBox desktop application.
+```
+
+**storage justification:**
+```
+Stores the extension's local settings only: the pairing token that links the extension to the user's own ShainBox desktop app, the last-used board, per-site on/off preferences, and a temporary queue of clips waiting to be delivered while the desktop app is offline. Nothing is transmitted anywhere beyond the user's own machine.
+```
+
+**alarms justification:**
+```
+A periodic alarm retries delivery of queued clips to the ShainBox desktop app on the user's own machine (127.0.0.1). If the app was closed when the user saved an image, the queue is flushed automatically once the app is running again.
+```
+
+**Host permission justification:**
+```
+The extension's single purpose is saving images and videos the user hovers over on any website into their local ShainBox library, so the content script must run on all sites (<all_urls>) — we cannot know in advance where a designer collects references. The 127.0.0.1 / localhost permissions are used solely to deliver saved files to the ShainBox desktop application running on the user's own computer. No page content is read or transmitted anywhere else; the extension contains no analytics and communicates with no remote servers.
+```
+
+**Are you using remote code?** → **No, I am not using remote code**
+(весь JS внутри пакета, нет eval и внешних скриптов — «Yes» было бы неправдой
+и утащило бы в углублённое ревью).
+
+**Data usage:** НЕ отмечать ни один тип данных (мы ничего не собираем).
+Сертификационные чекбоксы в конце секции — отметить.
+
+**Privacy policy URL:** https://shain.one/shainbox/privacy.html
 
 ## Прочее в дашборде
 
