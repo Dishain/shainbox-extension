@@ -5,17 +5,16 @@
 
 ---
 
-## Название (до 45 символов)
+## Название и короткое описание — ЖИВУТ В МАНИФЕСТЕ
 
-**ShainBox Clipper — Save Design References**
+CWS берёт Title и Summary из manifest.json внутри zip — в дашборде они
+не редактируются. Уже прошито в 0.2.0-zip:
 
-(44 символа. Бренд + функция + ключевые слова «save/design references» для поиска.)
+- name: **ShainBox Clipper — Save Design References**
+- description: **Hover any image, GIF or video and save it straight to your
+  local ShainBox library. One click, no cloud, no accounts.**
 
-## Короткое описание (до 132 символов)
-
-**Hover any image, GIF or video and save it straight to your local ShainBox library. One click, no cloud, no accounts.**
-
-(118 символов.)
+Менять текст → менять manifest.json → пересобирать zip → загружать новый пакет.
 
 ## Полное описание
 
