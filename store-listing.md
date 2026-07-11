@@ -1,7 +1,7 @@
 # Chrome Web Store — материалы листинга (v0.2.0)
 
 Всё, что нужно вставить в дашборд CWS. Тексты — EN (аудитория глобальная).
-Загружаемый файл: `shainbox-clipper-0.2.0.zip`.
+Загружаемый файл: `diivo-clipper-0.3.0.zip`.
 
 ---
 
@@ -40,18 +40,18 @@ Your files never touch our servers — the extension talks only to the Diivo
 app running on YOUR computer (via a local pairing token). No accounts, no
 cloud, no tracking, no analytics inside the extension.
 
-NEEDS THE FREE SHAINBOX APP
+NEEDS THE FREE DIIVO APP
 This extension is a companion to Diivo for macOS and Windows.
-Download it at https://shain.one/shainbox — free 14-day trial, then a $29
+Download it at https://shain.one/diivo — free 30-day trial, then a $29
 one-time purchase (no subscription, free updates).
 
-WHY SHAINBOX
+WHY DIIVO
 • Boards are just folders on your disk — your library outlives any app.
 • AI search: find "that dark dashboard with the green chart" by describing it.
 • OCR: text inside your screenshots is searchable too.
 • Tags, notes, favorites, source URLs — everything a reference deserves.
 
-Questions or ideas? → https://shain.one/shainbox
+Questions or ideas? → https://shain.one/diivo
 ```
 
 ## Категория и язык
@@ -115,11 +115,11 @@ The extension's single purpose is saving images and videos the user hovers over 
 **Data usage:** НЕ отмечать ни один тип данных (мы ничего не собираем).
 Сертификационные чекбоксы в конце секции — отметить.
 
-**Privacy policy URL:** https://shain.one/shainbox/privacy.html
+**Privacy policy URL:** https://shain.one/diivo/privacy.html
 
 ## Прочее в дашборде
 
-- Official URL / Homepage: https://shain.one/shainbox
+- Official URL / Homepage: https://shain.one/diivo
 - Support email: тот, с которого отвечаешь пользователям
 - Регионы: все
 - Декларация EEA: non-trader (уже выбрано)
