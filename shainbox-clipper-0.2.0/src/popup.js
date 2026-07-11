@@ -1,5 +1,5 @@
 /**
- * Diivo Clipper — popup.
+ * ShainBox Clipper — popup.
  *
  * Paired & valid: compact status + per-site toggle + video/GIF beta toggle;
  * the pairing form hides behind a "Change pairing token…" link. Unpaired or
@@ -25,7 +25,7 @@ const videoToggle = document.getElementById('videoToggle')
 
 const HINT_DEFAULT = 'In the app: Settings → Browser clipper → turn it on → copy the token here.'
 const HINT_PAIRED = 'Paired. Hover any image and click Save.'
-const HINT_BAD = 'That token doesn’t match — copy a fresh one from Diivo → Settings.'
+const HINT_BAD = 'That token doesn’t match — copy a fresh one from ShainBox → Settings.'
 
 let st = { paired: false, appOnline: false, tokenValid: false }
 let editing = false
@@ -63,7 +63,7 @@ function refreshStatus() {
     }
     st = s
     if (!s.appOnline) {
-      setStatus(false, 'Diivo not running')
+      setStatus(false, 'ShainBox not running')
     } else if (!s.paired) {
       setStatus(false, 'App found — not paired')
     } else if (!s.tokenValid) {

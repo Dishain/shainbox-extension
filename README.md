@@ -1,15 +1,15 @@
-# ShainBox Clipper
+# Diivo Clipper
 
 A Chrome/Chromium extension (Manifest V3) that saves images from any website
-straight into the **ShainBox** desktop app — hover an image, click **Save**, and
-it lands in your ShainBox Inbox.
+straight into the **Diivo** desktop app — hover an image, click **Save**, and
+it lands in your Diivo Inbox.
 
 ## How it works
 
 - A content script shows a small **Save** button on the top-right of any
   reasonably-sized image on hover.
 - Clicking sends the image URL + page URL to the background service worker.
-- The worker talks to the ShainBox desktop app over a **local loopback server**
+- The worker talks to the Diivo desktop app over a **local loopback server**
   (`http://127.0.0.1:8127`, with a small fallback port range), authenticated
   with a **pairing token**.
 - If the app isn't running, saves are **queued** and flushed automatically when
@@ -20,7 +20,7 @@ extension only talks to `127.0.0.1`.
 
 ## Setup
 
-1. In **ShainBox → Settings → Browser clipper**, turn the clipper on and copy the
+1. In **Diivo → Settings → Browser clipper**, turn the clipper on and copy the
    **pairing token**.
 2. Load this extension in Chrome:
    - Go to `chrome://extensions`

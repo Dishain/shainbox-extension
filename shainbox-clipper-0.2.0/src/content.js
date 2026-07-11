@@ -1,8 +1,8 @@
 /**
- * Diivo Clipper — content script (Pinterest-style control).
+ * ShainBox Clipper — content script (Pinterest-style control).
  *
  * On image hover, shows a small floating control in the top-right corner:
- *   [ Diivo mark  |  ⌄ ]
+ *   [ ShainBox mark  |  ⌄ ]
  * Clicking the mark saves the image to the last-used board. Clicking the
  * chevron opens a board picker; choosing a board saves there and remembers it.
  * Styled in the Tran Mau Tri Tam idiom — white surface, hairline, soft shadow,
@@ -85,7 +85,7 @@ function build() {
   control = document.createElement('div')
   control.className = 'shainbox-clip'
   control.innerHTML =
-    `<button class="shainbox-clip__save" type="button" title="Save to Diivo">${APP_MARK}</button>` +
+    `<button class="shainbox-clip__save" type="button" title="Save to ShainBox">${APP_MARK}</button>` +
     `<span class="shainbox-clip__div"></span>` +
     `<button class="shainbox-clip__more" type="button" title="Choose board">${CHEVRON}</button>`
   menu = document.createElement('div')
@@ -196,7 +196,7 @@ function loadBoards() {
 function renderMenu() {
   const rows =
     boards.length === 0
-      ? `<div class="shainbox-clip__empty">Open Diivo and pair the extension</div>`
+      ? `<div class="shainbox-clip__empty">Open ShainBox and pair the extension</div>`
       : boards
           .map((b) => {
             const active = b.relPath === lastBoard ? ' is-active' : ''

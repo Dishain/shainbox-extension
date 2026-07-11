@@ -1,5 +1,5 @@
 /**
- * Diivo Clipper — background service worker (MV3).
+ * ShainBox Clipper — background service worker (MV3).
  *
  * Talks to the desktop app's loopback server (127.0.0.1). Responsibilities:
  *   - discover the app (ping a small port range, remember the good one)
