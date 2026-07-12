@@ -52,6 +52,40 @@
 .shainbox-clip__save.is-error {
   background: rgba(255, 90, 90, 0.22);
 }
+/* Clip accepted but the desktop app is closed — amber "action needed". */
+.shainbox-clip__save.is-queued {
+  background: rgba(255, 159, 67, 0.25);
+  color: #ffb45e;
+}
+
+/* Note bubble under the pill: honest status when the app is closed.
+   Same dark surface as the pill, amber leading dot to signal "attention,
+   not failure". */
+.shainbox-clip__note {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  display: none;
+  max-width: 250px;
+  padding: 9px 12px 9px 26px;
+  background: #1f1f22;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ececf0;
+}
+.shainbox-clip__note::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #ff9f43;
+}
 .shainbox-clip__div {
   width: 1px;
   height: 18px;

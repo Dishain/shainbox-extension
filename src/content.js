@@ -125,30 +125,62 @@ function showFor(img) {
 
 function scheduleHide() {
   clearTimeout(hideTimer)
+  // While the queued-note is showing, keep the pill on screen long enough
+  // for the message to be read even if the cursor wanders off.
+  const delay = Date.now() < noteUntil ? noteUntil - Date.now() + 200 : 160
   hideTimer = setTimeout(() => {
     if (menuOpen) return
     if (control) control.style.display = 'none'
     currentMedia = null
-  }, 160)
+  }, delay)
 }
 
 function resetSaveIcon() {
   if (saveBtn) {
     saveBtn.innerHTML = APP_MARK
-    saveBtn.classList.remove('is-ok', 'is-error')
+    saveBtn.classList.remove('is-ok', 'is-error', 'is-queued')
   }
 }
+
+/* Transient note bubble under the pill — used when the save needs the
+   user to act (e.g. the desktop app is closed and the clip was queued).
+   The pill stays visible while the note is up so the message can't be
+   missed by a stray mouse-out. */
+let noteUntil = 0
+function showNote(text) {
+  if (!control) return
+  let note = control.querySelector('.shainbox-clip__note')
+  if (!note) {
+    note = document.createElement('div')
+    note.className = 'shainbox-clip__note'
+    control.appendChild(note)
+  }
+  note.textContent = text
+  note.style.display = 'block'
+  noteUntil = Date.now() + 3800
+  setTimeout(() => {
+    if (Date.now() >= noteUntil && note) note.style.display = 'none'
+  }, 3900)
+}
+
 function flashSave(kind, label) {
   if (!saveBtn) return
-  saveBtn.classList.remove('is-ok', 'is-error')
+  saveBtn.classList.remove('is-ok', 'is-error', 'is-queued')
   if (kind === 'ok') {
     saveBtn.innerHTML = CHECK
     saveBtn.classList.add('is-ok')
+  } else if (kind === 'queued') {
+    // Not an error, but not a success either: the clip is safe in the
+    // queue, yet nothing appears in the library until the app runs.
+    // Say so explicitly right here — not only in the popup.
+    saveBtn.classList.add('is-queued')
+    saveBtn.title = 'Diivo is closed — clip queued'
+    showNote('Diivo is closed — clip saved to the queue. Open the app and it will appear in your library.')
   } else {
     saveBtn.classList.add('is-error')
     saveBtn.title = label || 'Failed'
   }
-  setTimeout(resetSaveIcon, 1400)
+  setTimeout(resetSaveIcon, kind === 'queued' ? 3800 : 1400)
 }
 
 function save(board) {
@@ -161,6 +193,8 @@ function save(board) {
     (resp) => {
       saveBtn.classList.remove('is-busy')
       if (chrome.runtime.lastError) return flashSave('error', 'App off')
+      // Queued ≠ saved: the app is closed, so be honest about it here.
+      if (resp && resp.ok && resp.queued) return flashSave('queued')
       if (resp && resp.ok) return flashSave('ok')
       if (resp && resp.reason === 'unpaired') return flashSave('error', 'Pair first')
       flashSave('error', (resp && resp.error) || 'Failed')
