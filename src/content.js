@@ -192,11 +192,20 @@ function save(board) {
     { type: 'save', imageUrl, pageUrl: location.href, board },
     (resp) => {
       saveBtn.classList.remove('is-busy')
-      if (chrome.runtime.lastError) return flashSave('error', 'App off')
+      // Every failure gets a spelled-out note bubble, not just a tinted
+      // button — the user must never wonder what "nothing happened" means.
+      if (chrome.runtime.lastError) {
+        showNote('The extension was updated — refresh this page (⌘R) to keep clipping.')
+        return flashSave('error', 'Refresh page')
+      }
       // Queued ≠ saved: the app is closed, so be honest about it here.
       if (resp && resp.ok && resp.queued) return flashSave('queued')
       if (resp && resp.ok) return flashSave('ok')
-      if (resp && resp.reason === 'unpaired') return flashSave('error', 'Pair first')
+      if (resp && resp.reason === 'unpaired') {
+        showNote('Not paired yet — click the Diivo icon in the Chrome toolbar and paste the token from Diivo → Settings.')
+        return flashSave('error', 'Pair first')
+      }
+      showNote('Could not save: ' + ((resp && resp.error) || 'unknown error') + '. Check that Diivo is open and paired.')
       flashSave('error', (resp && resp.error) || 'Failed')
     },
   )
