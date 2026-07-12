@@ -73,7 +73,9 @@
   top: calc(100% + 6px);
   right: 0;
   display: none;
-  max-width: 250px;
+  /* Fixed width: an absolutely-positioned box inside the ~60px pill
+     shrink-wraps to the pill's width otherwise (one word per line). */
+  width: 240px;
   padding: 9px 12px 9px 26px;
   background: #1f1f22;
   border: 1px solid rgba(255, 255, 255, 0.1);

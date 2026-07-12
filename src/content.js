@@ -1,11 +1,11 @@
 /**
- * Diivo Clipper — content script (Pinterest-style control).
+ * Diivo Clipper - content script (Pinterest-style control).
  *
  * On image hover, shows a small floating control in the top-right corner:
  *   [ Diivo mark  |  ⌄ ]
  * Clicking the mark saves the image to the last-used board. Clicking the
  * chevron opens a board picker; choosing a board saves there and remembers it.
- * Styled in the Tran Mau Tri Tam idiom — white surface, hairline, soft shadow,
+ * Styled in the Tran Mau Tri Tam idiom - white surface, hairline, soft shadow,
  * one blue accent, generous radius.
  */
 
@@ -53,7 +53,7 @@ chrome.storage.local.get('lastBoard').then(({ lastBoard: lb }) => {
 })
 
 // Per-site kill switch + video/GIF beta toggle (managed from the popup).
-// Both react live via storage.onChanged — no page reload needed.
+// Both react live via storage.onChanged - no page reload needed.
 let siteDisabled = false
 let videoSaves = true
 chrome.storage.local.get(['disabledSites', 'videoSaves']).then(({ disabledSites, videoSaves: vs }) => {
@@ -142,7 +142,7 @@ function resetSaveIcon() {
   }
 }
 
-/* Transient note bubble under the pill — used when the save needs the
+/* Transient note bubble under the pill - used when the save needs the
    user to act (e.g. the desktop app is closed and the clip was queued).
    The pill stays visible while the note is up so the message can't be
    missed by a stray mouse-out. */
@@ -172,10 +172,10 @@ function flashSave(kind, label) {
   } else if (kind === 'queued') {
     // Not an error, but not a success either: the clip is safe in the
     // queue, yet nothing appears in the library until the app runs.
-    // Say so explicitly right here — not only in the popup.
+    // Say so explicitly right here - not only in the popup.
     saveBtn.classList.add('is-queued')
-    saveBtn.title = 'Diivo is closed — clip queued'
-    showNote('Diivo is closed — clip saved to the queue. Open the app and it will appear in your library.')
+    saveBtn.title = 'Diivo is closed - clip queued'
+    showNote('Diivo is closed - clip saved to the queue. Open the app and it will appear in your library.')
   } else {
     saveBtn.classList.add('is-error')
     saveBtn.title = label || 'Failed'
@@ -193,16 +193,16 @@ function save(board) {
     (resp) => {
       saveBtn.classList.remove('is-busy')
       // Every failure gets a spelled-out note bubble, not just a tinted
-      // button — the user must never wonder what "nothing happened" means.
+      // button - the user must never wonder what "nothing happened" means.
       if (chrome.runtime.lastError) {
-        showNote('The extension was updated — refresh this page (⌘R) to keep clipping.')
+        showNote('The extension was updated - refresh this page (⌘R) to keep clipping.')
         return flashSave('error', 'Refresh page')
       }
       // Queued ≠ saved: the app is closed, so be honest about it here.
       if (resp && resp.ok && resp.queued) return flashSave('queued')
       if (resp && resp.ok) return flashSave('ok')
       if (resp && resp.reason === 'unpaired') {
-        showNote('Not paired yet — click the Diivo icon in the Chrome toolbar and paste the token from Diivo → Settings.')
+        showNote('Not paired yet - click the Diivo icon in the Chrome toolbar and paste the token from Diivo → Settings.')
         return flashSave('error', 'Pair first')
       }
       showNote('Could not save: ' + ((resp && resp.error) || 'unknown error') + '. Check that Diivo is open and paired.')
@@ -294,7 +294,7 @@ function eligible(el) {
   )
 }
 
-/** Videos often hide under overlay divs — probe the element stack at the cursor. */
+/** Videos often hide under overlay divs - probe the element stack at the cursor. */
 function findMediaAt(e) {
   if (e.target instanceof Element && eligible(e.target)) return e.target
   if (typeof e.clientX !== 'number') return null
