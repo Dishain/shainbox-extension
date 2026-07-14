@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Diivo Clipper — Save Design References",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Hover any image, GIF or video and save it straight to your local Diivo library. One click, no cloud, no accounts.",
   "icons": {
     "16": "icons/icon16.png",

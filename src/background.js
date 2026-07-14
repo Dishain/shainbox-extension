@@ -122,6 +122,56 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     })()
     return true // async response
   }
+  if (msg && msg.type === 'saveBytes') {
+    ;(async () => {
+      const token = await getToken()
+      if (!token) {
+        await flash('#ff5a5a', '!')
+        sendResponse({ ok: false, reason: 'unpaired' })
+        return
+      }
+      const port = await findApp()
+      if (!port) {
+        // Raw bytes are too heavy for the storage queue - say so honestly
+        // instead of pretending the clip is safe somewhere.
+        await flash('#ff9f43', '•')
+        sendResponse({
+          ok: false,
+          reason: 'error',
+          error: 'Diivo is closed - open it and clip the video again',
+        })
+        return
+      }
+      try {
+        const bytes = Uint8Array.from(atob(msg.data), (c) => c.charCodeAt(0))
+        const res = await fetch(`http://127.0.0.1:${port}/save`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/octet-stream',
+            'x-shainbox-token': token,
+            'x-shainbox-filename': msg.filename || 'clip.mp4',
+            'x-shainbox-board': msg.board || 'Inbox',
+            'x-shainbox-page-url': msg.pageUrl || '',
+          },
+          body: bytes,
+        })
+        const j = await res.json().catch(() => ({}))
+        if (res.ok && j.ok) {
+          await flash('#1fb36b', '✓')
+          sendResponse({ ok: true })
+        } else if (res.status === 401) {
+          sendResponse({ ok: false, reason: 'unauthorized' })
+        } else {
+          await flash('#ff5a5a', '!')
+          sendResponse({ ok: false, reason: 'error', error: j.error })
+        }
+      } catch (e) {
+        await flash('#ff5a5a', '!')
+        sendResponse({ ok: false, reason: 'error', error: String((e && e.message) || e) })
+      }
+    })()
+    return true
+  }
   if (msg && msg.type === 'boards') {
     ;(async () => {
       const token = await getToken()

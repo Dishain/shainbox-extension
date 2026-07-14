@@ -81,7 +81,16 @@ function hideControl() {
 }
 
 function build() {
-  if (control) return
+  if (control && control.isConnected) return
+  // SPA re-renders (X, Pinterest) can wipe our node from the DOM — the pill
+  // then "works" invisibly. Rebuild from scratch whenever it's gone.
+  if (control) {
+    control.remove()
+    control = null
+    menu = null
+    saveBtn = null
+    menuOpen = false
+  }
   control = document.createElement('div')
   control.className = 'shainbox-clip'
   control.innerHTML =
@@ -183,32 +192,98 @@ function flashSave(kind, label) {
   setTimeout(resetSaveIcon, kind === 'queued' ? 3800 : 1400)
 }
 
+/** Shared response handling for both save paths. Every failure gets a
+ *  spelled-out note bubble, not just a tinted button - the user must never
+ *  wonder what "nothing happened" means. */
+function handleSaveResponse(resp) {
+  saveBtn.classList.remove('is-busy')
+  if (chrome.runtime.lastError) {
+    showNote('The extension was updated - refresh this page (⌘R) to keep clipping.')
+    return flashSave('error', 'Refresh page')
+  }
+  // Queued ≠ saved: the app is closed, so be honest about it here.
+  if (resp && resp.ok && resp.queued) return flashSave('queued')
+  if (resp && resp.ok) return flashSave('ok')
+  if (resp && resp.reason === 'unpaired') {
+    showNote('Not paired yet - click the Diivo icon in the Chrome toolbar and paste the token from Diivo → Settings.')
+    return flashSave('error', 'Pair first')
+  }
+  showNote('Could not save: ' + ((resp && resp.error) || 'unknown error') + '. Check that Diivo is open and paired.')
+  flashSave('error', (resp && resp.error) || 'Failed')
+}
+
+/** pbs.twimg.com serves downsized variants by default - ask for the large one. */
+function upgradeKnownCdns(u) {
+  try {
+    const url = new URL(u)
+    if (url.hostname === 'pbs.twimg.com' && url.searchParams.has('name')) {
+      url.searchParams.set('name', 'large')
+      return url.toString()
+    }
+  } catch {
+    /* keep original */
+  }
+  return u
+}
+
+const BLOB_MAX_BYTES = 48 * 1024 * 1024
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(String(r.result).split(',')[1] || '')
+    r.onerror = () => reject(r.error)
+    r.readAsDataURL(blob)
+  })
+}
+
+/** blob:-video path: fetch the bytes here (the page owns the blob) and ship
+ *  them to the app as-is. MediaSource streams have nothing to fetch - that
+ *  failure gets an honest note instead of a silent no-op. */
+function saveBlobVideo(media, board) {
+  fetch(media.currentSrc || media.src)
+    .then((r) => r.blob())
+    .then((blob) => {
+      if (blob.size > BLOB_MAX_BYTES) throw new Error('too-big')
+      const mime = blob.type || 'video/mp4'
+      const ext = mime.includes('webm') ? '.webm' : mime.includes('quicktime') ? '.mov' : '.mp4'
+      return blobToBase64(blob).then((data) => {
+        chrome.runtime.sendMessage(
+          {
+            type: 'saveBytes',
+            data,
+            filename: `clip-${Date.now()}${ext}`,
+            pageUrl: location.href,
+            board,
+          },
+          handleSaveResponse,
+        )
+      })
+    })
+    .catch((err) => {
+      saveBtn.classList.remove('is-busy')
+      if (String(err && err.message) === 'too-big') {
+        showNote('This video is over 48 MB - too large to capture from the browser.')
+        return flashSave('error', 'Too large')
+      }
+      showNote("This site streams video in a way the clipper can't capture yet.")
+      flashSave('error', 'Stream not saveable')
+    })
+}
+
 function save(board) {
   if (!currentMedia) return
   const imageUrl = mediaUrl(currentMedia)
-  if (!imageUrl) return
+  if (!imageUrl && !isBlobVideo(currentMedia)) return
   saveBtn.classList.add('is-busy')
-  chrome.runtime.sendMessage(
-    { type: 'save', imageUrl, pageUrl: location.href, board },
-    (resp) => {
-      saveBtn.classList.remove('is-busy')
-      // Every failure gets a spelled-out note bubble, not just a tinted
-      // button - the user must never wonder what "nothing happened" means.
-      if (chrome.runtime.lastError) {
-        showNote('The extension was updated - refresh this page (⌘R) to keep clipping.')
-        return flashSave('error', 'Refresh page')
-      }
-      // Queued ≠ saved: the app is closed, so be honest about it here.
-      if (resp && resp.ok && resp.queued) return flashSave('queued')
-      if (resp && resp.ok) return flashSave('ok')
-      if (resp && resp.reason === 'unpaired') {
-        showNote('Not paired yet - click the Diivo icon in the Chrome toolbar and paste the token from Diivo → Settings.')
-        return flashSave('error', 'Pair first')
-      }
-      showNote('Could not save: ' + ((resp && resp.error) || 'unknown error') + '. Check that Diivo is open and paired.')
-      flashSave('error', (resp && resp.error) || 'Failed')
-    },
-  )
+  if (imageUrl) {
+    chrome.runtime.sendMessage(
+      { type: 'save', imageUrl: upgradeKnownCdns(imageUrl), pageUrl: location.href, board },
+      handleSaveResponse,
+    )
+  } else {
+    saveBlobVideo(currentMedia, board)
+  }
   lastBoard = board
   void chrome.storage.local.set({ lastBoard: board })
   closeMenu()
@@ -284,22 +359,32 @@ function isVideoLike(el) {
   return /\.gif([?#]|$)/i.test(u)
 }
 
+/** blob:-backed <video> (X, Pinterest players). No http URL to hand to the
+ *  app, but the bytes can often be fetched right here in the page. */
+function isBlobVideo(el) {
+  return el instanceof HTMLVideoElement && /^blob:/i.test(el.currentSrc || el.src || '')
+}
+
 function eligible(el) {
   return (
     (el instanceof HTMLImageElement || el instanceof HTMLVideoElement) &&
     el.clientWidth >= MIN_SIZE &&
     el.clientHeight >= MIN_SIZE &&
     (videoSaves || !isVideoLike(el)) &&
-    !!mediaUrl(el)
+    (!!mediaUrl(el) || isBlobVideo(el))
   )
 }
 
-/** Videos often hide under overlay divs - probe the element stack at the cursor. */
+/** Media often hides under overlay divs (X photo layers, Pinterest link
+ *  layers) - probe the whole element stack at the cursor, not just the
+ *  hovered node. Top-to-bottom order keeps the visible media first. */
 function findMediaAt(e) {
   if (e.target instanceof Element && eligible(e.target)) return e.target
   if (typeof e.clientX !== 'number') return null
   for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
-    if (el instanceof HTMLVideoElement && eligible(el)) return el
+    if ((el instanceof HTMLVideoElement || el instanceof HTMLImageElement) && eligible(el)) {
+      return el
+    }
   }
   return null
 }
