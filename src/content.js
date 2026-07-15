@@ -228,6 +228,48 @@ function upgradeKnownCdns(u) {
 
 const BLOB_MAX_BYTES = 48 * 1024 * 1024
 
+/**
+ * MSE players (X, Pinterest) hide the media behind a blob:, but the page
+ * itself fetches plain .mp4 files from the CDN - and those URLs are visible
+ * in the document's resource timing. Find the freshest video, then its
+ * largest resolution variant, and hand that URL to the app like any clip.
+ */
+function findStreamedMp4() {
+  let entries = []
+  try {
+    entries = performance.getEntriesByType('resource')
+  } catch {
+    return null
+  }
+  const vids = entries.filter((e) =>
+    /(video\.twimg\.com|v\.pinimg\.com)\/.*\.mp4/i.test(e.name),
+  )
+  if (vids.length === 0) return null
+  // Group variants of the same video by the numeric id in the path, take
+  // the most recently fetched group (≈ the video the user is looking at)...
+  const groups = new Map()
+  for (const e of vids) {
+    const key = (e.name.match(/\/(\d{8,})\//) || [])[1] || e.name.replace(/\/\d+x\d+\//, '/')
+    const g = groups.get(key) || { last: 0, items: [] }
+    g.last = Math.max(g.last, e.startTime)
+    g.items.push(e.name)
+    groups.set(key, g)
+  }
+  const freshest = [...groups.values()].sort((a, b) => b.last - a.last)[0]
+  // ...then the largest WxH variant inside it.
+  const area = (u) => {
+    const m = u.match(/\/(\d+)x(\d+)\//)
+    return m ? Number(m[1]) * Number(m[2]) : 0
+  }
+  const best = freshest.items.sort((a, b) => area(b) - area(a))[0]
+  try {
+    const u = new URL(best)
+    return u.origin + u.pathname + u.search
+  } catch {
+    return null
+  }
+}
+
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const r = new FileReader()
@@ -237,10 +279,20 @@ function blobToBase64(blob) {
   })
 }
 
-/** blob:-video path: fetch the bytes here (the page owns the blob) and ship
- *  them to the app as-is. MediaSource streams have nothing to fetch - that
- *  failure gets an honest note instead of a silent no-op. */
+/** blob:-video path, two attempts before giving up:
+ *  1. The CDN mp4 the page streamed from (resource timing) - covers X and
+ *     Pinterest players, downloads at full quality via the normal URL path.
+ *  2. Fetching the blob itself - works when the blob is a real file.
+ *  Only a genuine dead end gets the error note. */
 function saveBlobVideo(media, board) {
+  const streamed = findStreamedMp4()
+  if (streamed) {
+    chrome.runtime.sendMessage(
+      { type: 'save', imageUrl: streamed, pageUrl: location.href, board },
+      handleSaveResponse,
+    )
+    return
+  }
   fetch(media.currentSrc || media.src)
     .then((r) => r.blob())
     .then((blob) => {
@@ -266,8 +318,10 @@ function saveBlobVideo(media, board) {
         showNote('This video is over 48 MB - too large to capture from the browser.')
         return flashSave('error', 'Too large')
       }
-      showNote("This site streams video in a way the clipper can't capture yet.")
-      flashSave('error', 'Stream not saveable')
+      // MediaSource stream and no CDN URL seen yet - usually the video just
+      // hasn't loaded. Tell the user the one thing that actually helps.
+      showNote("Couldn't grab this video yet - play it for a second, then clip again.")
+      flashSave('error', 'Play the video first')
     })
 }
 
