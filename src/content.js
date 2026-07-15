@@ -228,47 +228,33 @@ function upgradeKnownCdns(u) {
 
 const BLOB_MAX_BYTES = 48 * 1024 * 1024
 
-/* mp4 variant URLs harvested by page-hook.js from X's API responses
-   (MAIN world → postMessage → here). Newest first, capped. */
-const streamUrls = []
-window.addEventListener('message', (e) => {
-  if (e.source !== window || !e.data || e.data.__diivoClipper !== 'mp4-urls') return
-  const urls = Array.isArray(e.data.urls) ? e.data.urls : []
-  for (const u of urls) {
-    if (typeof u !== 'string' || !/^https:\/\/video\.twimg\.com\//.test(u)) continue
-    const i = streamUrls.indexOf(u)
-    if (i !== -1) streamUrls.splice(i, 1)
-    streamUrls.unshift(u)
-  }
-  if (streamUrls.length > 80) streamUrls.length = 80
-})
-
-/** Resolution area from a /WxH/ path segment - 0 when absent. */
-function variantArea(u) {
-  const m = u.match(/\/(\d+)x(\d+)\//)
-  return m ? Number(m[1]) * Number(m[2]) : 0
-}
-
-/** Numeric media id shared by a video's thumb and its mp4 variants. */
-function mediaIdOf(u) {
-  const m = String(u).match(/(?:_video|_thumb)\/(\d{8,})\//)
-  return m ? m[1] : null
-}
-
 /**
- * Best harvested mp4 for the hovered <video>. The poster thumb and the mp4
- * variants share a numeric media id, so an exact match comes first; the
- * most recently harvested video is the fallback (≈ what's on screen).
+ * Ask the MAIN-world helper (page-hook.js, X domains only) to pull the
+ * hovered video's mp4 variant out of React fiber state. The element is
+ * marked with a one-shot data attribute so the helper can find it across
+ * worlds. Resolves null on any miss or after a short timeout.
  */
-function harvestedMp4For(media) {
-  if (streamUrls.length === 0) return null
-  const posterId = mediaIdOf(media.poster || '')
-  const pool = posterId ? streamUrls.filter((u) => u.includes(`/${posterId}/`)) : []
-  if (pool.length > 0) return pool.sort((a, b) => variantArea(b) - variantArea(a))[0]
-  if (posterId) return null // known id but no variants for it - don't guess
-  const latestId = mediaIdOf(streamUrls[0])
-  const group = latestId ? streamUrls.filter((u) => u.includes(`/${latestId}/`)) : [streamUrls[0]]
-  return group.sort((a, b) => variantArea(b) - variantArea(a))[0]
+function requestFiberMp4(media) {
+  return new Promise((resolve) => {
+    const reqId = 'd' + Math.random().toString(36).slice(2, 10)
+    let done = false
+    const finish = (url) => {
+      if (done) return
+      done = true
+      window.removeEventListener('message', onMsg)
+      media.removeAttribute('data-diivo-clip')
+      resolve(url || null)
+    }
+    const onMsg = (e) => {
+      if (e.source !== window || !e.data || e.data.__diivoClipper !== 'video-result') return
+      if (e.data.reqId !== reqId) return
+      finish(typeof e.data.url === 'string' && /^https:\/\//i.test(e.data.url) ? e.data.url : null)
+    }
+    window.addEventListener('message', onMsg)
+    media.setAttribute('data-diivo-clip', reqId)
+    window.postMessage({ __diivoClipper: 'find-video', reqId }, '*')
+    setTimeout(() => finish(null), 800)
+  })
 }
 
 /**
@@ -322,20 +308,26 @@ function blobToBase64(blob) {
   })
 }
 
-/** blob:-video path, two attempts before giving up:
- *  1. The CDN mp4 the page streamed from (resource timing) - covers X and
- *     Pinterest players, downloads at full quality via the normal URL path.
- *  2. Fetching the blob itself - works when the blob is a real file.
+/** blob:-video path, three attempts before giving up:
+ *  1. React fiber state (X) - the exact hovered tweet's mp4, best bitrate.
+ *  2. The CDN mp4 the page streamed from (resource timing) - other players.
+ *  3. Fetching the blob itself - works when the blob is a real file.
  *  Only a genuine dead end gets the error note. */
 function saveBlobVideo(media, board) {
-  const streamed = harvestedMp4For(media) || findStreamedMp4()
-  if (streamed) {
-    chrome.runtime.sendMessage(
-      { type: 'save', imageUrl: streamed, pageUrl: location.href, board },
-      handleSaveResponse,
-    )
-    return
-  }
+  void requestFiberMp4(media).then((fiberUrl) => {
+    const streamed = fiberUrl || findStreamedMp4()
+    if (streamed) {
+      chrome.runtime.sendMessage(
+        { type: 'save', imageUrl: streamed, pageUrl: location.href, board },
+        handleSaveResponse,
+      )
+      return
+    }
+    saveBlobBytes(media, board)
+  })
+}
+
+function saveBlobBytes(media, board) {
   fetch(media.currentSrc || media.src)
     .then((r) => r.blob())
     .then((blob) => {
